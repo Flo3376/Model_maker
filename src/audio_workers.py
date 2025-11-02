@@ -153,8 +153,21 @@ class ResponseRecorder(QThread):
             if self.device_index is None:
                 return
                 
-            # Forcer 44.1kHz pour éviter les problèmes de resampling
-            samplerate = RESPONSE_SAMPLE_RATE  # Toujours 44100, pas de device auto
+            # Utiliser la fréquence native du device pour éviter les erreurs
+            dev_info = sd.query_devices(self.device_index)
+            device_samplerate = int(dev_info.get('default_samplerate', RESPONSE_SAMPLE_RATE))
+            
+            # Préférer 44.1kHz si supporté, sinon utiliser la fréquence native
+            try:
+                # Tester si 44.1kHz est supporté
+                sd.check_input_settings(device=self.device_index, samplerate=RESPONSE_SAMPLE_RATE)
+                samplerate = RESPONSE_SAMPLE_RATE
+                print(f"   ✅ Utilisation de 44.1kHz (préféré)")
+            except:
+                # Fallback sur la fréquence native du device
+                samplerate = device_samplerate
+                print(f"   ⚠️ Fallback sur fréquence native: {samplerate}Hz")
+            
             channels = 1  # Mono pour les réponses
             
             print(f"   🎚️ Audio config: {samplerate}Hz, {channels}ch, blocksize={BLOCKSIZE}")
@@ -179,6 +192,27 @@ class ResponseRecorder(QThread):
                     dbfs = -80.0
                 
                 self._process_audio_level(dbfs, audio_data, frames)
+            
+            # Vérifier que les paramètres sont supportés avant de créer le stream
+            try:
+                sd.check_input_settings(
+                    device=self.device_index,
+                    channels=channels,
+                    samplerate=samplerate,
+                    dtype=DTYPE
+                )
+                print(f"   ✅ Paramètres audio vérifiés et supportés")
+            except Exception as e:
+                print(f"   ❌ Paramètres non supportés: {e}")
+                # Essayer avec des paramètres plus conservateurs
+                samplerate = 48000  # Fréquence très commune
+                print(f"   🔄 Nouveau test avec {samplerate}Hz...")
+                try:
+                    sd.check_input_settings(device=self.device_index, channels=channels, samplerate=samplerate)
+                    print(f"   ✅ {samplerate}Hz accepté")
+                except:
+                    print(f"   ❌ Impossible de trouver des paramètres compatibles")
+                    return
             
             # Démarrer le stream d'enregistrement avec paramètres optimisés
             with sd.InputStream(
