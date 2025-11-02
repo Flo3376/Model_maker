@@ -110,26 +110,22 @@ class ResponseRecorder(QThread):
     speech_detected = pyqtSignal()
     silence_detected = pyqtSignal()
     
-    def __init__(self, question_number, device_index=None):
+    def __init__(self, question_number, device_index=None, preferred_samplerate=None):
         super().__init__()
         self.question_number = question_number
         self.device_index = device_index
+        self.preferred_samplerate = preferred_samplerate  # Fréquence pré-testée
         self.should_stop = False
         
-        # État de l'enregistrement
-        self.recording_active = IMMEDIATE_RECORDING  # Démarrer immédiatement si configuré
-        self.speech_started = IMMEDIATE_RECORDING    # Idem
-        self.last_activity_time = None
+        # État de l'enregistrement - SIMPLIFIÉ
+        self.recording_active = True  # Toujours enregistrer
+        self.speech_started = True    # Pas de détection compliquée
         self.last_silence_time = None
         self.silence_start_time = None
         self.recording_data = []
         
-        # Gestion environnement bruyant
-        self.noise_floor = -60.0  # Plancher de bruit initial (sera appris)
-        self.noise_samples = []   # Échantillons pour apprentissage du bruit
-        self.learning_phase = NOISE_FLOOR_ADAPTATION
-        self.learning_start_time = None
-        self.dynamic_threshold = VU_METER_THRESHOLD
+        # Seuil fixe - pas d'apprentissage du bruit
+        self.threshold = VU_METER_THRESHOLD
         
     def run(self):
         try:
@@ -137,40 +133,42 @@ class ResponseRecorder(QThread):
             output_file = f"{RESPONSE_FOLDER}/reponse_{self.question_number:02d}.wav"
             os.makedirs(RESPONSE_FOLDER, exist_ok=True)
             
-            print(f"🎤 Démarrage surveillance réponse Q{self.question_number}")
-            print(f"   📁 Fichier: {output_file}")
-            if IMMEDIATE_RECORDING:
-                print(f"   🚀 ENREGISTREMENT IMMÉDIAT activé")
-                print(f"   🤫 Timeout silence: {MIN_SILENCE_DURATION_MS}ms (optimisé réponses courtes)")
-            else:
-                print(f"   ⏱️ Seuil démarrage: {SPEECH_START_THRESHOLD_SEC}s d'activité")
-                print(f"   🤫 Timeout silence: {SPEECH_SILENCE_TIMEOUT_MS}ms")
-            
-            if NOISE_FLOOR_ADAPTATION:
-                print(f"   🔇 Adaptation au bruit ambiant: {NOISE_FLOOR_LEARNING_SEC}s d'apprentissage")
+            print("=" * 80)
+            print(f"🎤 [RECORDER] Démarrage enregistrement Q{self.question_number}")
+            print(f"   📁 [RECORDER] Fichier: {output_file}")
+            print(f"   🎚️ [RECORDER] Seuil silence: {self.threshold} dBFS")
+            print(f"   ⏱️ [RECORDER] Timeout silence: {SPEECH_SILENCE_TIMEOUT_MS}ms")
+            print("=" * 80)
             
             # Configuration audio optimisée pour qualité
             if self.device_index is None:
                 return
                 
-            # Utiliser la fréquence native du device pour éviter les erreurs
-            dev_info = sd.query_devices(self.device_index)
-            device_samplerate = int(dev_info.get('default_samplerate', RESPONSE_SAMPLE_RATE))
-            
-            # Préférer 44.1kHz si supporté, sinon utiliser la fréquence native
-            try:
-                # Tester si 44.1kHz est supporté
-                sd.check_input_settings(device=self.device_index, samplerate=RESPONSE_SAMPLE_RATE)
-                samplerate = RESPONSE_SAMPLE_RATE
-                print(f"   ✅ Utilisation de 44.1kHz (préféré)")
-            except:
-                # Fallback sur la fréquence native du device
-                samplerate = device_samplerate
-                print(f"   ⚠️ Fallback sur fréquence native: {samplerate}Hz")
+            # Utiliser la fréquence pré-détectée si disponible
+            if self.preferred_samplerate:
+                samplerate = self.preferred_samplerate
+                print(f"   ✅ [RECORDER] Utilisation fréquence pré-testée: {samplerate}Hz")
+            else:
+                # Fallback sur détection classique si pas de pré-test
+                print("   ⚠️ [RECORDER] Pas de fréquence pré-testée, détection...")
+                preferred_samplerates = [RESPONSE_SAMPLE_RATE, 48000, 22050, 16000, 8000]
+                samplerate = None
+                
+                for test_rate in preferred_samplerates:
+                    try:
+                        sd.check_input_settings(device=self.device_index, samplerate=test_rate, channels=1)
+                        samplerate = test_rate
+                        print(f"   ✅ [RECORDER] Fréquence détectée: {samplerate}Hz")
+                        break
+                    except:
+                        continue
+                
+                if samplerate is None:
+                    print(f"   ❌ [RECORDER] Aucune fréquence supportée - utilisation 44100Hz par défaut")
+                    samplerate = 44100
             
             channels = 1  # Mono pour les réponses
-            
-            print(f"   🎚️ Audio config: {samplerate}Hz, {channels}ch, blocksize={BLOCKSIZE}")
+            print(f"   🎚️ [RECORDER] Config finale: {samplerate}Hz, {channels}ch, blocksize={BLOCKSIZE}")
             
             def audio_callback(indata, frames, time_info, status):
                 if self.should_stop:
@@ -178,7 +176,7 @@ class ResponseRecorder(QThread):
                 
                 # Vérifier les erreurs de status
                 if status:
-                    print(f"⚠️ Audio callback status: {status}")
+                    print(f"⚠️ [RECORDER] Audio callback status: {status}")
                 
                 # Utiliser directement float32 sans conversion multiple
                 audio_data = indata.astype(np.float32)
@@ -215,27 +213,28 @@ class ResponseRecorder(QThread):
                     return
             
             # Démarrer le stream d'enregistrement avec paramètres optimisés
-            with sd.InputStream(
-                device=self.device_index,
-                channels=channels,
-                samplerate=samplerate,
-                callback=audio_callback,
-                blocksize=BLOCKSIZE,
-                dtype=DTYPE,
-                latency='low',        # Latence faible pour réduire les hachures
-                extra_settings=sd.WasapiSettings(exclusive=False)  # Mode partagé plus stable
-            ):
-                if IMMEDIATE_RECORDING:
-                    print("🔴 ENREGISTREMENT DÉMARRÉ IMMÉDIATEMENT")
-                    print("🎤 Parlez maintenant, la détection de fin est automatique")
+            try:
+                with sd.InputStream(
+                    device=self.device_index,
+                    channels=channels,
+                    samplerate=samplerate,
+                    callback=audio_callback,
+                    blocksize=BLOCKSIZE,
+                    dtype=DTYPE,
+                    latency='low'        # Latence faible, mais pas de paramètres WASAPI spéciaux
+                ):
+                    print("🔴 [RECORDER] ENREGISTREMENT DÉMARRÉ (après fin de question)")
+                    print("🎤 [RECORDER] En attente de votre réponse...")
                     self.recording_started.emit()
                     self.speech_detected.emit()
-                else:
-                    print("🎤 Stream d'enregistrement actif, en attente de parole...")
-                
-                # Attendre jusqu'à arrêt
-                while not self.should_stop:
-                    self.msleep(50)
+                    
+                    # Attendre jusqu'à arrêt
+                    while not self.should_stop:
+                        self.msleep(50)
+                        
+            except Exception as stream_error:
+                print(f"❌ [RECORDER] Erreur création stream audio: {stream_error}")
+                return
             
             # Sauvegarder l'enregistrement si on a des données
             if self.recording_data:
@@ -245,93 +244,24 @@ class ResponseRecorder(QThread):
             print(f"❌ Erreur enregistrement réponse: {e}")
     
     def _process_audio_level(self, dbfs, indata, frames):
-        """Traite le niveau audio pour détecter début/fin de parole avec gestion du bruit"""
-        current_time = time.time()
-        
-        # Phase d'apprentissage du bruit de fond
-        if self.learning_phase and NOISE_FLOOR_ADAPTATION:
-            if self.learning_start_time is None:
-                self.learning_start_time = current_time
-                print(f"🔇 Début apprentissage bruit de fond...")
-            
-            learning_duration = current_time - self.learning_start_time
-            if learning_duration < NOISE_FLOOR_LEARNING_SEC:
-                # Collecter échantillons de bruit
-                self.noise_samples.append(dbfs)
-                return  # Ne pas traiter pendant l'apprentissage
-            else:
-                # Finir apprentissage
-                if self.noise_samples:
-                    self.noise_floor = np.percentile(self.noise_samples, 75)  # 75ème percentile
-                    
-                    # Auto-configuration selon l'environnement détecté
-                    env_type = environment_manager.auto_configure(self.noise_samples)
-                    self.dynamic_threshold = environment_manager.get_adapted_threshold(self.noise_floor)
-                    
-                    print(f"✅ Bruit de fond appris: {self.noise_floor:.1f} dBFS")
-                    print(f"📊 Nouveau seuil adaptatif: {self.dynamic_threshold:.1f} dBFS")
-                    print(f"🎯 Environnement détecté: {env_type}")
-                else:
-                    print("⚠️ Pas d'échantillons de bruit, utilisation seuil par défaut")
-                    self.dynamic_threshold = VU_METER_THRESHOLD
-                
-                self.learning_phase = False
-                self.noise_samples = []  # Libérer mémoire
-        
-        # Utiliser le seuil adaptatif ou fixe
-        threshold = self.dynamic_threshold if DYNAMIC_SILENCE_DETECTION else VU_METER_THRESHOLD
-        is_active = dbfs > threshold
-        
-        # Si enregistrement immédiat, toujours enregistrer (optimisé)
-        if IMMEDIATE_RECORDING and self.recording_active:
-            # Éviter copy() inutile si on a déjà les bonnes données
+        """Version simplifiée - enregistre tout, PAS d'arrêt automatique"""
+        # Toujours enregistrer les données audio
+        if self.recording_active:
             self.recording_data.append(indata if indata.dtype == np.float32 else indata.astype(np.float32))
         
+        # Juste pour info, pas d'action automatique
+        is_active = dbfs > self.threshold
+        
         if is_active:
-            self.last_silence_time = None
+            if self.silence_start_time is not None:
+                print(f"🔊 [RECORDER] Voix détectée ({dbfs:.1f} dBFS)")
             self.silence_start_time = None
-            
-            # Mode détection classique (si pas d'enregistrement immédiat)
-            if not IMMEDIATE_RECORDING:
-                if self.last_activity_time is None:
-                    self.last_activity_time = current_time
-                    print(f"🎤 Début activité détectée ({dbfs:.1f} dBFS, seuil: {threshold:.1f})")
-                
-                if not self.speech_started:
-                    activity_duration = current_time - self.last_activity_time
-                    if activity_duration >= SPEECH_START_THRESHOLD_SEC:
-                        self._start_recording()
-                
-                if self.recording_active:
-                    # Optimiser la copie des données
-                    self.recording_data.append(indata if indata.dtype == np.float32 else indata.astype(np.float32))
-            
         else:
-            # Silence détecté
-            if self.last_silence_time is None:
-                self.last_silence_time = current_time
-            
-            if self.recording_active:
-                # Continuer d'enregistrer le silence pour un résultat naturel (optimisé)
-                self.recording_data.append(indata if indata.dtype == np.float32 else indata.astype(np.float32))
-                
-                # Mode automatique normal - détection de fin par silence
-                silence_timeout = environment_manager.get_silence_duration() if IMMEDIATE_RECORDING else SPEECH_SILENCE_TIMEOUT_MS
-                
-                if self.silence_start_time is None:
-                    self.silence_start_time = current_time
-                    print(f"🤫 Silence détecté, timeout de {silence_timeout}ms activé")
-                else:
-                    silence_duration = (current_time - self.silence_start_time) * 1000
-                    if silence_duration >= silence_timeout:
-                        self._on_silence_timeout()
-            else:
-                # Pas encore en enregistrement (mode classique uniquement)
-                if not IMMEDIATE_RECORDING and self.last_activity_time is not None:
-                    silence_duration = current_time - self.last_silence_time
-                    if silence_duration > (SPEECH_TOLERANCE_MS / 1000.0):
-                        print(f"🔄 Reset timer activité après {silence_duration*1000:.0f}ms de silence")
-                        self.last_activity_time = None
+            if self.silence_start_time is None:
+                self.silence_start_time = time.time()
+                print(f"🤫 [RECORDER] Silence ({dbfs:.1f} dBFS < {self.threshold}) - MAIS pas d'arrêt auto")
+        
+        # PAS D'ARRÊT AUTOMATIQUE - seulement manuel via bouton
     
     def _start_recording(self):
         """Démarre l'enregistrement effectif"""
@@ -346,23 +276,11 @@ class ResponseRecorder(QThread):
             self.recording_started.emit()
             self.speech_detected.emit()
     
-    def _on_silence_timeout(self):
-        """Appelé quand le timeout de silence est atteint"""
-        if self.recording_active:
-            silence_timeout = environment_manager.get_silence_duration() if IMMEDIATE_RECORDING else SPEECH_SILENCE_TIMEOUT_MS
-            print("=" * 50)
-            print(f"🔇 ARRÊT AUTOMATIQUE (silence de {silence_timeout}ms)")
-            print("💾 Sauvegarde en cours...")
-            print("=" * 50)
-            self.recording_active = False
-            self.silence_detected.emit()
-            self.should_stop = True
-    
     def _save_recording(self, output_file, samplerate):
         """Sauvegarde l'enregistrement dans un fichier WAV"""
         try:
             if not self.recording_data:
-                print("⚠️ Aucune donnée à sauvegarder")
+                print("⚠️ [RECORDER] Aucune donnée à sauvegarder")
                 return
                 
             # Concaténer toutes les données
@@ -372,16 +290,17 @@ class ResponseRecorder(QThread):
             sf.write(output_file, audio_data, samplerate)
             
             duration = len(audio_data) / samplerate
-            print(f"💾 Réponse sauvegardée: {output_file}")
-            print(f"   📊 Durée: {duration:.2f}s, {len(audio_data)} échantillons")
+            print(f"💾 [RECORDER] Réponse sauvegardée: {output_file}")
+            print(f"   📊 [RECORDER] Durée: {duration:.2f}s, {len(audio_data)} échantillons")
             
             self.recording_finished.emit(output_file)
             
         except Exception as e:
-            print(f"❌ Erreur sauvegarde: {e}")
+            print(f"❌ [RECORDER] Erreur sauvegarde: {e}")
     
     def stop_recording(self):
-        """Arrête l'enregistrement immédiatement"""
+        """Arrête l'enregistrement immédiatement - DÉCLENCHÉ MANUELLEMENT"""
+        print("🛑 [RECORDER] ARRÊT MANUEL demandé (bouton 'Question Terminée')")
         self.should_stop = True
 
 

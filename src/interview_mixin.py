@@ -88,17 +88,21 @@ class InterviewMixin:
     
     def on_question_finished(self):
         """Appelé quand l'audio de la question est terminé - Démarre l'enregistrement de la réponse"""
-        print("🎤 Question terminée, démarrage surveillance réponse...")
+        print("🔊 [INTERFACE] Question audio terminée")
+        print("🎤 [INTERFACE] Démarrage de l'enregistrement de la réponse...")
         self.start_response_recording()
     
     def start_response_recording(self):
         """Démarre l'enregistrement de la réponse utilisateur"""
         try:
+            print("🔄 [INTERFACE] Préparation enregistrement réponse...")
+            
             # Obtenir le numéro de question actuel
             question_number = self.question_manager.get_current_question_number()
             
             # Arrêter l'enregistrement précédent s'il existe
             if hasattr(self, 'response_recorder') and self.response_recorder:
+                print("🛑 [INTERFACE] Arrêt enregistrement précédent...")
                 self.response_recorder.stop_recording()
                 self.response_recorder.wait()
             
@@ -107,7 +111,14 @@ class InterviewMixin:
             if hasattr(self, 'audio_worker') and self.audio_worker:
                 device_index = self.audio_worker.device_index
             
-            self.response_recorder = ResponseRecorder(question_number, device_index)
+            print(f"🎤 [INTERFACE] Création ResponseRecorder pour Q{question_number}")
+            
+            # Passer la fréquence pré-testée si disponible
+            preferred_samplerate = getattr(self, 'best_audio_frequency', None)
+            if preferred_samplerate:
+                print(f"📊 [INTERFACE] Utilisation fréquence pré-testée: {preferred_samplerate}Hz")
+            
+            self.response_recorder = ResponseRecorder(question_number, device_index, preferred_samplerate)
             
             # Connecter les signaux
             self.response_recorder.recording_started.connect(self.on_recording_started)
@@ -116,41 +127,33 @@ class InterviewMixin:
             self.response_recorder.silence_detected.connect(self.on_silence_detected)
             
             # Démarrer l'enregistrement
+            print("▶️ [INTERFACE] Lancement du thread d'enregistrement...")
             self.response_recorder.start()
             
         except Exception as e:
-            print(f"❌ Erreur démarrage enregistrement: {e}")
+            print(f"❌ [INTERFACE] Erreur démarrage enregistrement: {e}")
     
     def on_recording_started(self):
         """Appelé quand l'enregistrement a vraiment commencé"""
-        print("🔴 SIGNAL: Enregistrement démarré")
-        # Optionnel: changer l'interface pour indiquer l'enregistrement
+        print("✅ [INTERFACE] Signal reçu: enregistrement confirmé démarré")
     
     def on_recording_finished(self, file_path):
         """Appelé quand l'enregistrement est terminé"""
-        print(f"✅ SIGNAL: Enregistrement terminé - {file_path}")
+        print(f"📁 [INTERFACE] Signal reçu: enregistrement terminé -> {file_path}")
         print("=" * 60)
-        print("🎯 RÉPONSE ENREGISTRÉE AVEC SUCCÈS !")
-        print(f"⏳ Attente de {DELAY_BEFORE_REPLY_MS/1000:.1f}s avant la réponse de Swan...")
+        print("🎯 [INTERFACE] RÉPONSE ENREGISTRÉE AVEC SUCCÈS !")
         print("=" * 60)
         
-        # Continuer avec délai
-        self.continue_after_response()
+        # NE PLUS continuer automatiquement - l'utilisateur doit cliquer
+        print("👆 [INTERFACE] Cliquez sur 'QUESTION TERMINÉE' quand vous avez fini de parler")
     
     def on_speech_detected(self):
         """Appelé quand une parole est détectée"""
-        print("🗣️ Parole détectée")
+        print("🗣️ [INTERFACE] Signal reçu: parole détectée")
     
     def on_silence_detected(self):
         """Appelé quand un silence prolongé est détecté"""
-        print("🤫 Silence prolongé détecté")
-    
-    def continue_after_response(self):
-        """Continue le processus après l'enregistrement de la réponse avec délai"""
-        print(f"⏳ Attente de {DELAY_BEFORE_REPLY_MS}ms avant la réponse bateau...")
-        
-        # Utiliser QTimer pour le délai depuis le thread principal
-        QTimer.singleShot(DELAY_BEFORE_REPLY_MS, self.end_current_question)
+        print("🤫 [INTERFACE] Signal reçu: silence prolongé détecté")
     
     def update_resume_status(self):
         """Met à jour l'affichage avec l'état de reprise détecté"""
@@ -195,16 +198,19 @@ class InterviewMixin:
     
     def end_current_question(self):
         """Termine la question actuelle et joue la réponse"""
+        print("🔘 [INTERFACE] BOUTON 'QUESTION TERMINÉE' cliqué")
+        
         question_data = self.question_manager.get_current_question()
         if question_data:
             # Arrêter l'audio de la question si en cours
             if self.current_audio_player:
+                print("🛑 [INTERFACE] Arrêt lecture question en cours...")
                 self.current_audio_player.stop()
                 self.current_audio_player.wait()
             
             # Arrêter l'enregistrement en cours
             if hasattr(self, 'response_recorder') and self.response_recorder:
-                print("⏹️ Arrêt de l'enregistrement...")
+                print("🛑 [INTERFACE] Demande d'arrêt de l'enregistrement...")
                 self.response_recorder.stop_recording()
             
             # Afficher la réponse dans l'interface
@@ -213,43 +219,58 @@ class InterviewMixin:
             self.question_display.setText(f"💬 Swan: {reply_text}")
             
             # Jouer l'audio de la réponse après un petit délai
+            print("⏱️ [INTERFACE] Délai 500ms avant lecture réponse Swan...")
             QTimer.singleShot(500, lambda: self._play_current_reply(question_data))
             
             # Désactiver temporairement les boutons
             self.end_question_btn.setEnabled(False)
             self.next_btn.setEnabled(False)
             
-            print(f"✅ Question {current} terminée - Réponse: {reply_text}")
+            print(f"✅ [INTERFACE] Question {current} marquée terminée - Réponse: {reply_text}")
     
     def _play_current_reply(self, question_data):
         """Joue la réponse de la question actuelle"""
+        print("🔊 [INTERFACE] Début lecture réponse Swan...")
+        
         # Jouer l'audio de la réponse
         audio_file = f"{GENERATED_FOLDER}/{question_data['file_reply']}"
         if os.path.exists(audio_file):
+            print(f"📂 [INTERFACE] Fichier audio trouvé: {audio_file}")
             self.current_audio_player = AudioPlayer(audio_file)
             # Connecter le signal pour attendre la fin AVANT de continuer
             self.current_audio_player.finished.connect(self.on_reply_finished)
             self.current_audio_player.start()
-            print(f"🔊 Lecture réponse: {audio_file}")
+            print(f"▶️ [INTERFACE] Lecture démarrée: {audio_file}")
         else:
-            print(f"⚠️ Fichier réponse manquant: {audio_file}")
+            print(f"❌ [INTERFACE] Fichier réponse manquant: {audio_file}")
+            print("⏱️ [INTERFACE] Délai 2s puis simulation fin réponse...")
             QTimer.singleShot(2000, self.on_reply_finished)
     
     def on_reply_finished(self):
         """Appelé quand l'audio de réponse est terminé - PLUS de passage automatique"""
-        print("🔊 Réponse terminée")
-        print("👆 Cliquez sur 'QUESTION SUIVANTE' pour continuer")
+        print("🔊 [INTERFACE] Réponse Swan terminée")
+        print("👆 [INTERFACE] Cliquez sur 'QUESTION SUIVANTE' pour continuer")
         
         # Réactiver les boutons pour que l'utilisateur puisse continuer manuellement
         self.next_btn.setEnabled(self.question_manager.has_next_question())
         if not self.question_manager.has_next_question():
             # Dernière question, activer le bouton de fin d'interview
+            print("🏁 [INTERFACE] Dernière question - Bouton 'TERMINER L'INTERVIEW' activé")
             self.next_btn.setText("TERMINER L'INTERVIEW")
             self.next_btn.setEnabled(True)
     
     def next_question(self):
         """Passe manuellement à la question suivante (SEULE méthode maintenant)"""
+        print("🔘 [INTERFACE] BOUTON 'QUESTION SUIVANTE' cliqué")
+        
+        # ARRÊTER D'ABORD L'ENREGISTREMENT EN COURS
+        if hasattr(self, 'response_recorder') and self.response_recorder:
+            print("🛑 [INTERFACE] Arrêt enregistrement avant question suivante...")
+            self.response_recorder.stop_recording()
+            self.response_recorder.wait()  # Attendre que l'arrêt soit effectif
+        
         if self.question_manager.has_next_question():
+            print("➡️ [INTERFACE] Passage à la question suivante...")
             self.question_manager.next_question()
             self.display_current_question()
             # Réactiver le bouton de fin de question pour la nouvelle question
@@ -258,6 +279,7 @@ class InterviewMixin:
             self.next_btn.setText("QUESTION SUIVANTE")
         else:
             # Fin de l'interview
+            print("🏁 [INTERFACE] Fin de l'interview demandée")
             self.end_interview()
     
     def end_interview(self):

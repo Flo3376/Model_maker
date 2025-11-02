@@ -42,6 +42,7 @@ class MainWindow(QMainWindow, InterviewMixin):
         self.vu_meter_required_duration = VU_METER_VALIDATION_TIME  # Utiliser la variable globale
         self.silence_debounce_timer = None  # Timer pour le debounce de silence
         self.silence_debounce_duration = SILENCE_DEBOUNCE_MS  # Utiliser la variable globale
+        self.best_audio_frequency = None  # Fréquence optimale détectée lors de la validation
         print("Initialisation interface...")
         self.setup_ui()
         self.setup_audio()
@@ -333,6 +334,9 @@ class MainWindow(QMainWindow, InterviewMixin):
                     self.vu_meter_validated = True
                     self.vu_meter_start_time = None
                     print(f"✅ Microphone validé après {elapsed:.1f}s d'activité continue")
+                    
+                    # NOUVEAU: Détecter la meilleure fréquence audio maintenant
+                    self.detect_best_audio_frequency()
         else:
             # Silence détecté - déclencher le debounce timer s'il n'existe pas
             if self.silence_debounce_timer is None and self.vu_meter_start_time is not None:
@@ -351,6 +355,54 @@ class MainWindow(QMainWindow, InterviewMixin):
             self.vu_meter_start_time = None
         
         self.silence_debounce_timer = None
+    
+    def detect_best_audio_frequency(self):
+        """Détecte la meilleure fréquence audio supportée pour ce microphone"""
+        if not self.audio_worker or self.audio_worker.device_index is None:
+            print("⚠️ [FREQ-TEST] Pas de device sélectionné")
+            return
+        
+        print("🔍 [FREQ-TEST] Détection de la meilleure fréquence audio...")
+        
+        # Fréquences à tester par ordre de préférence
+        from .config import RESPONSE_SAMPLE_RATE
+        preferred_samplerates = [RESPONSE_SAMPLE_RATE, 48000, 22050, 16000, 8000]
+        
+        # Ajouter la fréquence native du device
+        try:
+            import sounddevice as sd
+            dev_info = sd.query_devices(self.audio_worker.device_index)
+            device_samplerate = int(dev_info.get('default_samplerate', 44100))
+            if device_samplerate not in preferred_samplerates:
+                preferred_samplerates.insert(0, device_samplerate)
+            print(f"📊 [FREQ-TEST] Fréquence native device: {device_samplerate}Hz")
+        except Exception as e:
+            print(f"⚠️ [FREQ-TEST] Erreur lecture info device: {e}")
+        
+        # Tester chaque fréquence
+        best_frequency = None
+        for test_rate in preferred_samplerates:
+            try:
+                sd.check_input_settings(
+                    device=self.audio_worker.device_index, 
+                    samplerate=test_rate, 
+                    channels=1,
+                    dtype='float32'
+                )
+                best_frequency = test_rate
+                print(f"✅ [FREQ-TEST] {test_rate}Hz supporté")
+                break
+            except Exception as e:
+                print(f"❌ [FREQ-TEST] {test_rate}Hz non supporté: {e}")
+                continue
+        
+        if best_frequency:
+            # Sauvegarder la meilleure fréquence trouvée
+            self.best_audio_frequency = best_frequency
+            print(f"🎚️ [FREQ-TEST] Meilleure fréquence sélectionnée: {best_frequency}Hz")
+        else:
+            print(f"❌ [FREQ-TEST] Aucune fréquence supportée trouvée !")
+            self.best_audio_frequency = 44100  # Fallback
     
     def update_start_button_state(self):
         """Met à jour l'état du bouton commencer selon les conditions"""
