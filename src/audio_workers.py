@@ -16,8 +16,11 @@ from PyQt6.QtCore import QObject, QThread, QTimer, pyqtSignal
 from .config import (
     DBFS_FLOOR, UPDATE_INTERVAL_MS, BLOCKSIZE, DTYPE,
     VU_METER_THRESHOLD, SPEECH_START_THRESHOLD_SEC, SPEECH_SILENCE_TIMEOUT_MS,
-    SPEECH_TOLERANCE_MS, RESPONSE_SAMPLE_RATE, RESPONSE_FOLDER, AMBIANCE_VOLUME
+    SPEECH_TOLERANCE_MS, RESPONSE_SAMPLE_RATE, RESPONSE_FOLDER, AMBIANCE_VOLUME,
+    IMMEDIATE_RECORDING, NOISE_FLOOR_ADAPTATION, NOISE_FLOOR_LEARNING_SEC,
+    DYNAMIC_SILENCE_DETECTION, MIN_SILENCE_DURATION_MS
 )
+from .environment_utils import environment_manager
 
 
 class AudioWorker(QObject):
@@ -114,12 +117,19 @@ class ResponseRecorder(QThread):
         self.should_stop = False
         
         # État de l'enregistrement
-        self.recording_active = False
-        self.speech_started = False
+        self.recording_active = IMMEDIATE_RECORDING  # Démarrer immédiatement si configuré
+        self.speech_started = IMMEDIATE_RECORDING    # Idem
         self.last_activity_time = None
-        self.last_silence_time = None  # Nouveau: pour tolérer les micro-pauses
-        self.silence_start_time = None  # Pour timeout de silence sans QTimer
+        self.last_silence_time = None
+        self.silence_start_time = None
         self.recording_data = []
+        
+        # Gestion environnement bruyant
+        self.noise_floor = -60.0  # Plancher de bruit initial (sera appris)
+        self.noise_samples = []   # Échantillons pour apprentissage du bruit
+        self.learning_phase = NOISE_FLOOR_ADAPTATION
+        self.learning_start_time = None
+        self.dynamic_threshold = VU_METER_THRESHOLD
         
     def run(self):
         try:
@@ -129,8 +139,15 @@ class ResponseRecorder(QThread):
             
             print(f"🎤 Démarrage surveillance réponse Q{self.question_number}")
             print(f"   📁 Fichier: {output_file}")
-            print(f"   ⏱️ Seuil démarrage: {SPEECH_START_THRESHOLD_SEC}s d'activité")
-            print(f"   🤫 Timeout silence: {SPEECH_SILENCE_TIMEOUT_MS}ms")
+            if IMMEDIATE_RECORDING:
+                print(f"   🚀 ENREGISTREMENT IMMÉDIAT activé")
+                print(f"   🤫 Timeout silence: {MIN_SILENCE_DURATION_MS}ms (optimisé réponses courtes)")
+            else:
+                print(f"   ⏱️ Seuil démarrage: {SPEECH_START_THRESHOLD_SEC}s d'activité")
+                print(f"   🤫 Timeout silence: {SPEECH_SILENCE_TIMEOUT_MS}ms")
+            
+            if NOISE_FLOOR_ADAPTATION:
+                print(f"   🔇 Adaptation au bruit ambiant: {NOISE_FLOOR_LEARNING_SEC}s d'apprentissage")
             
             # Configuration audio
             if self.device_index is None:
@@ -163,7 +180,13 @@ class ResponseRecorder(QThread):
                 blocksize=BLOCKSIZE,
                 dtype=DTYPE
             ):
-                print("🎤 Stream d'enregistrement actif, en attente de parole...")
+                if IMMEDIATE_RECORDING:
+                    print("🔴 ENREGISTREMENT DÉMARRÉ IMMÉDIATEMENT")
+                    print("🎤 Parlez maintenant, la détection de fin est automatique")
+                    self.recording_started.emit()
+                    self.speech_detected.emit()
+                else:
+                    print("🎤 Stream d'enregistrement actif, en attente de parole...")
                 
                 # Attendre jusqu'à arrêt
                 while not self.should_stop:
@@ -177,54 +200,91 @@ class ResponseRecorder(QThread):
             print(f"❌ Erreur enregistrement réponse: {e}")
     
     def _process_audio_level(self, dbfs, indata, frames):
-        """Traite le niveau audio pour détecter début/fin de parole"""
+        """Traite le niveau audio pour détecter début/fin de parole avec gestion du bruit"""
         current_time = time.time()
         
-        # Détection d'activité vocale
-        is_active = dbfs > VU_METER_THRESHOLD
+        # Phase d'apprentissage du bruit de fond
+        if self.learning_phase and NOISE_FLOOR_ADAPTATION:
+            if self.learning_start_time is None:
+                self.learning_start_time = current_time
+                print(f"🔇 Début apprentissage bruit de fond...")
+            
+            learning_duration = current_time - self.learning_start_time
+            if learning_duration < NOISE_FLOOR_LEARNING_SEC:
+                # Collecter échantillons de bruit
+                self.noise_samples.append(dbfs)
+                return  # Ne pas traiter pendant l'apprentissage
+            else:
+                # Finir apprentissage
+                if self.noise_samples:
+                    self.noise_floor = np.percentile(self.noise_samples, 75)  # 75ème percentile
+                    
+                    # Auto-configuration selon l'environnement détecté
+                    env_type = environment_manager.auto_configure(self.noise_samples)
+                    self.dynamic_threshold = environment_manager.get_adapted_threshold(self.noise_floor)
+                    
+                    print(f"✅ Bruit de fond appris: {self.noise_floor:.1f} dBFS")
+                    print(f"📊 Nouveau seuil adaptatif: {self.dynamic_threshold:.1f} dBFS")
+                    print(f"🎯 Environnement détecté: {env_type}")
+                else:
+                    print("⚠️ Pas d'échantillons de bruit, utilisation seuil par défaut")
+                    self.dynamic_threshold = VU_METER_THRESHOLD
+                
+                self.learning_phase = False
+                self.noise_samples = []  # Libérer mémoire
+        
+        # Utiliser le seuil adaptatif ou fixe
+        threshold = self.dynamic_threshold if DYNAMIC_SILENCE_DETECTION else VU_METER_THRESHOLD
+        is_active = dbfs > threshold
+        
+        # Si enregistrement immédiat, toujours enregistrer
+        if IMMEDIATE_RECORDING and self.recording_active:
+            self.recording_data.append(indata.copy())
         
         if is_active:
-            self.last_silence_time = None  # Reset du silence
-            self.silence_start_time = None  # Reset du timeout de silence
+            self.last_silence_time = None
+            self.silence_start_time = None
             
-            # Première activité détectée
-            if self.last_activity_time is None:
-                self.last_activity_time = current_time
-                print(f"🎤 Début activité détectée ({dbfs:.1f} dBFS)")
-            
-            # Vérifier si on doit démarrer l'enregistrement
-            if not self.speech_started:
-                activity_duration = current_time - self.last_activity_time
-                if activity_duration >= SPEECH_START_THRESHOLD_SEC:
-                    self._start_recording()
-            
-            # Si on enregistre, ajouter les données
-            if self.recording_active:
-                self.recording_data.append(indata.copy())
+            # Mode détection classique (si pas d'enregistrement immédiat)
+            if not IMMEDIATE_RECORDING:
+                if self.last_activity_time is None:
+                    self.last_activity_time = current_time
+                    print(f"🎤 Début activité détectée ({dbfs:.1f} dBFS, seuil: {threshold:.1f})")
                 
+                if not self.speech_started:
+                    activity_duration = current_time - self.last_activity_time
+                    if activity_duration >= SPEECH_START_THRESHOLD_SEC:
+                        self._start_recording()
+                
+                if self.recording_active:
+                    self.recording_data.append(indata.copy())
+            
         else:
             # Silence détecté
             if self.last_silence_time is None:
                 self.last_silence_time = current_time
             
-            silence_duration = current_time - self.last_silence_time
-            
-            if self.speech_started and self.recording_active:
-                # On enregistre déjà, continuer d'enregistrer le silence
-                self.recording_data.append(indata.copy())
+            if self.recording_active:
+                # Continuer d'enregistrer le silence pour un résultat naturel
+                if IMMEDIATE_RECORDING:
+                    self.recording_data.append(indata.copy())
+                else:
+                    self.recording_data.append(indata.copy())
                 
-                # Gérer le timeout de silence avec timing système
+                # Timeout de silence adapté
+                silence_timeout = environment_manager.get_silence_duration() if IMMEDIATE_RECORDING else SPEECH_SILENCE_TIMEOUT_MS
+                
                 if self.silence_start_time is None:
                     self.silence_start_time = current_time
-                    print(f"🤫 Silence détecté, timeout de {SPEECH_SILENCE_TIMEOUT_MS}ms activé")
+                    print(f"🤫 Silence détecté, timeout de {silence_timeout}ms activé")
                 else:
-                    silence_timeout_duration = (current_time - self.silence_start_time) * 1000  # en ms
-                    if silence_timeout_duration >= SPEECH_SILENCE_TIMEOUT_MS:
+                    silence_duration = (current_time - self.silence_start_time) * 1000
+                    if silence_duration >= silence_timeout:
                         self._on_silence_timeout()
             else:
-                # Pas encore d'enregistrement
-                if self.last_activity_time is not None:
-                    # Tolérer les micro-pauses (respiration, etc.)
+                # Pas encore en enregistrement (mode classique uniquement)
+                if not IMMEDIATE_RECORDING and self.last_activity_time is not None:
+                    silence_duration = current_time - self.last_silence_time
                     if silence_duration > (SPEECH_TOLERANCE_MS / 1000.0):
                         print(f"🔄 Reset timer activité après {silence_duration*1000:.0f}ms de silence")
                         self.last_activity_time = None
@@ -245,13 +305,14 @@ class ResponseRecorder(QThread):
     def _on_silence_timeout(self):
         """Appelé quand le timeout de silence est atteint"""
         if self.recording_active:
+            silence_timeout = environment_manager.get_silence_duration() if IMMEDIATE_RECORDING else SPEECH_SILENCE_TIMEOUT_MS
             print("=" * 50)
-            print(f"🔇 ARRÊT AUTOMATIQUE (silence de {SPEECH_SILENCE_TIMEOUT_MS}ms)")
+            print(f"🔇 ARRÊT AUTOMATIQUE (silence de {silence_timeout}ms)")
             print("💾 Sauvegarde en cours...")
             print("=" * 50)
             self.recording_active = False
             self.silence_detected.emit()
-            self.should_stop = True  # Arrêter le thread
+            self.should_stop = True
     
     def _save_recording(self, output_file, samplerate):
         """Sauvegarde l'enregistrement dans un fichier WAV"""
