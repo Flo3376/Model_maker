@@ -44,22 +44,24 @@ logs/
 debug.log
 error.log
 
-# === ORION SPÉCIFIQUE ===
+# === NOVAQA SPÉCIFIQUE ===
 
-# Cache audio généré
-sound/output_sound/
-sound/cache/
+# Réponses enregistrées (données utilisateur)
+sound_response/
 *.wav
-*.mp3
-*.ogg
 
+# Garde les fichiers audio système (mais ignore les logs)
+!disclaimer.wav
+!avant_de_commencer.wav
+!ambiance.mp3
+!generated/
+!generated/*.wav
 
+# Configuration locale
+config_local.json
+settings_local.json
 
-# Configuration locale (peut contenir clés API)
-config_local.yaml
-secrets.yaml
-
-# Cache interface
+# Cache PyQt
 .qt_cache/
 ui_cache/
 
@@ -69,15 +71,10 @@ tmp/
 *.tmp
 
 # === DONNÉES SENSIBLES ===
-# Clés API (sécurité)
-*api_key*
-*secret*
-*token*
-.env.local
-
 # Logs de débogage détaillés
 debug_*.log
 trace_*.log
+*_debug.txt
 
 # === SYSTÈME ===
 # Windows
@@ -94,20 +91,12 @@ $RECYCLE.BIN/
 # Linux
 *~
 
-# === TESTS ===
+# === TESTS & PROJETS PRÉCÉDENTS ===
 .pytest_cache/
 .coverage
 htmlcov/
 .tox/
 .nox/
-
-# === DOCUMENTATION ===
-docs/_build/
-
-# === DÉPLOIEMENT ===
-*.zip
-*.tar.gz
-release/
 /sandbox
 /tests
 .cache_spotify_controller

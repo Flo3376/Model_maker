@@ -1,0 +1,482 @@
+[
+  {
+    "question_01": {
+      "question": "Comment tu t'appelles ?",
+      "file_question": "question_01.wav",
+      "reply": "Enchanté, moi c’est Swan et je suis heureuse de faire ta connaissance. Je vais te poser une série de questions que tu pourras interrompre quand tu le souhaites. Comprends juste que plus tu réponds, plus je pourrai obtenir une empreinte viable de ta voix.",
+      "file_reply": "reply_01.wav"
+    }
+  },
+  {
+    "question_02": {
+      "question": "Tu joues souvent à Star Citizen en ce moment ?",
+      "file_question": "question_02.wav",
+      "reply": "D’accord.",
+      "file_reply": "reply_02.wav"
+    }
+  },
+  {
+    "question_03": {
+      "question": "Tu préfères voler en solo ou avec une équipe ?",
+      "file_question": "question_03.wav",
+      "reply": "Je vois.",
+      "file_reply": "reply_03.wav"
+    }
+  },
+  {
+    "question_04": {
+      "question": "Quel vaisseau tu utilises le plus souvent ?",
+      "file_question": "question_04.wav",
+      "reply": "Très bien.",
+      "file_reply": "reply_04.wav"
+    }
+  },
+  {
+    "question_05": {
+      "question": "Tu fais plutôt du commerce, du minage, de l’explo ou du combat ?",
+      "file_question": "question_05.wav",
+      "reply": "Ok.",
+      "file_reply": "reply_05.wav"
+    }
+  },
+  {
+    "question_06": {
+      "question": "Tu as une planète ou une lune préférée dans le ‘verse ?",
+      "file_question": "question_06.wav",
+      "reply": "D’accord.",
+      "file_reply": "reply_06.wav"
+    }
+  },
+  {
+    "question_07": {
+      "question": "Tu visites souvent Area18, Lorville, New Babbage ou Orison ?",
+      "file_question": "question_07.wav",
+      "reply": "Compris.",
+      "file_reply": "reply_07.wav"
+    }
+  },
+  {
+    "question_08": {
+      "question": "Tu as rejoint une organisation, ou tu restes indépendant ?",
+      "file_question": "question_08.wav",
+      "reply": "Très bien.",
+      "file_reply": "reply_08.wav"
+    }
+  },
+  {
+    "question_09": {
+      "question": "Tu suis les patchs et les événements saisonniers ?",
+      "file_question": "question_09.wav",
+      "reply": "Je vois.",
+      "file_reply": "reply_09.wav"
+    }
+  },
+  {
+    "question_10": {
+      "question": "Tu préfères les dogfights ou les missions à pied ?",
+      "file_question": "question_10.wav",
+      "reply": "D’accord.",
+      "file_reply": "reply_10.wav"
+    }
+  },
+  {
+    "question_11": {
+      "question": "Tu fais du cargo régulièrement ?",
+      "file_question": "question_11.wav",
+      "reply": "Ok.",
+      "file_reply": "reply_11.wav"
+    }
+  },
+  {
+    "question_12": {
+      "question": "Tu t’intéresses au minage de quantanium ou d’autres minerais ?",
+      "file_question": "question_12.wav",
+      "reply": "Je vois.",
+      "file_reply": "reply_12.wav"
+    }
+  },
+  {
+    "question_13": {
+      "question": "Tu as un vaisseau de rêve que tu aimerais posséder ?",
+      "file_question": "question_13.wav",
+      "reply": "Très bien.",
+      "file_reply": "reply_13.wav"
+    }
+  },
+  {
+    "question_14": {
+      "question": "Tu utilises souvent le mode Arena Commander ?",
+      "file_question": "question_14.wav",
+      "reply": "D’accord.",
+      "file_reply": "reply_14.wav"
+    }
+  },
+  {
+    "question_15": {
+      "question": "Tu participes aux events comme Jumptown, Xenothreat ou Siege of Orison ?",
+      "file_question": "question_15.wav",
+      "reply": "Compris.",
+      "file_reply": "reply_15.wav"
+    }
+  },
+  {
+    "question_16": {
+      "question": "Tu préfères atterrir toi-même ou utiliser l’atterrissage automatique ?",
+      "file_question": "question_16.wav",
+      "reply": "Ok.",
+      "file_reply": "reply_16.wav"
+    }
+  },
+  {
+    "question_17": {
+      "question": "Tu modifies tes composants de vaisseau (boucliers, QT, refroidisseurs) ?",
+      "file_question": "question_17.wav",
+      "reply": "Je vois.",
+      "file_reply": "reply_17.wav"
+    }
+  },
+  {
+    "question_18": {
+      "question": "Tu aimes faire de l’exploration lointaine en quantum ?",
+      "file_question": "question_18.wav",
+      "reply": "D’accord.",
+      "file_reply": "reply_18.wav"
+    }
+  },
+  {
+    "question_19": {
+      "question": "Tu fais de la chasse à la prime (bounty) de temps en temps ?",
+      "file_question": "question_19.wav",
+      "reply": "Très bien.",
+      "file_reply": "reply_19.wav"
+    }
+  },
+  {
+    "question_20": {
+      "question": "Tu préfères les petits vaisseaux agiles ou les plus gros et confortables ?",
+      "file_question": "question_20.wav",
+      "reply": "Ok.",
+      "file_reply": "reply_20.wav"
+    }
+  },
+  {
+    "question_21": {
+      "question": "Tu voyages souvent entre les systèmes et les principales zones commerciales ?",
+      "file_question": "question_21.wav",
+      "reply": "Je vois.",
+      "file_reply": "reply_21.wav"
+    }
+  },
+  {
+    "question_22": {
+      "question": "Tu fais des missions de récupération ou de salvage ?",
+      "file_question": "question_22.wav",
+      "reply": "D’accord.",
+      "file_reply": "reply_22.wav"
+    }
+  },
+  {
+    "question_23": {
+      "question": "Tu préfères te poser dans le désert, la neige ou la jungle alien ?",
+      "file_question": "question_23.wav",
+      "reply": "Très bien.",
+      "file_reply": "reply_23.wav"
+    }
+  },
+  {
+    "question_24": {
+      "question": "Tu utilises souvent un mobiGlas pour vérifier tes contrats et ton inventaire ?",
+      "file_question": "question_24.wav",
+      "reply": "Ok.",
+      "file_reply": "reply_24.wav"
+    }
+  },
+  {
+    "question_25": {
+      "question": "Tu personnalises ton personnage et tes tenues régulièrement ?",
+      "file_question": "question_25.wav",
+      "reply": "Je vois.",
+      "file_reply": "reply_25.wav"
+    }
+  },
+  {
+    "question_26": {
+      "question": "Tu préfères les balades tranquilles en MSR, 600i ou 400i ?",
+      "file_question": "question_26.wav",
+      "reply": "D’accord.",
+      "file_reply": "reply_26.wav"
+    }
+  },
+  {
+    "question_27": {
+      "question": "Tu te sers du mode photo pour capturer des paysages du ‘verse ?",
+      "file_question": "question_27.wav",
+      "reply": "Compris.",
+      "file_reply": "reply_27.wav"
+    }
+  },
+  {
+    "question_28": {
+      "question": "Tu aimes les sorties EVA pour réparer ou explorer des épaves ?",
+      "file_question": "question_28.wav",
+      "reply": "Très bien.",
+      "file_reply": "reply_28.wav"
+    }
+  },
+  {
+    "question_29": {
+      "question": "Tu préfères les missions FPS contre IA ou le PvP ?",
+      "file_question": "question_29.wav",
+      "reply": "Ok.",
+      "file_reply": "reply_29.wav"
+    }
+  },
+  {
+    "question_30": {
+      "question": "Tu fais des livraisons de colis pour te détendre parfois ?",
+      "file_question": "question_30.wav",
+      "reply": "Je vois.",
+      "file_reply": "reply_30.wav"
+    }
+  },
+  {
+    "question_31": {
+      "question": "Tu visites des stations spatiales pour le commerce et le ravitaillement ?",
+      "file_question": "question_31.wav",
+      "reply": "D’accord.",
+      "file_reply": "reply_31.wav"
+    }
+  },
+  {
+    "question_32": {
+      "question": "Tu as un spot favori pour le minage à bord d’un ROC ou d’un Prospector ?",
+      "file_question": "question_32.wav",
+      "reply": "Compris.",
+      "file_reply": "reply_32.wav"
+    }
+  },
+  {
+    "question_33": {
+      "question": "Tu aimes voler bas dans l’atmosphère pour profiter du paysage ?",
+      "file_question": "question_33.wav",
+      "reply": "Très bien.",
+      "file_reply": "reply_33.wav"
+    }
+  },
+  {
+    "question_34": {
+      "question": "Tu passes du temps à peaufiner l’équipement de ton personnage ?",
+      "file_question": "question_34.wav",
+      "reply": "Ok.",
+      "file_reply": "reply_34.wav"
+    }
+  },
+  {
+    "question_35": {
+      "question": "Tu as une habitude de vol, comme couper les lumières ou voler en manuel ?",
+      "file_question": "question_35.wav",
+      "reply": "Je vois.",
+      "file_reply": "reply_35.wav"
+    }
+  },
+  {
+    "question_36": {
+      "question": "Tu préfères atterrir dans des avant-postes reculés ou des grandes villes ?",
+      "file_question": "question_36.wav",
+      "reply": "D’accord.",
+      "file_reply": "reply_36.wav"
+    }
+  },
+  {
+    "question_37": {
+      "question": "Tu explores les grottes ou tu restes plutôt en surface ?",
+      "file_question": "question_37.wav",
+      "reply": "Très bien.",
+      "file_reply": "reply_37.wav"
+    }
+  },
+  {
+    "question_38": {
+      "question": "Tu participes aux expositions IAE ou Invictus pour essayer des vaisseaux ?",
+      "file_question": "question_38.wav",
+      "reply": "Ok.",
+      "file_reply": "reply_38.wav"
+    }
+  },
+  {
+    "question_39": {
+      "question": "Tu as déjà eu un moment mémorable lors d’un vol ou d’une mission ?",
+      "file_question": "question_39.wav",
+      "reply": "Je vois.",
+      "file_reply": "reply_39.wav"
+    }
+  },
+  {
+    "question_40": {
+      "question": "Tu préfères décoller depuis une planète ou une station orbitale ?",
+      "file_question": "question_40.wav",
+      "reply": "D’accord.",
+      "file_reply": "reply_40.wav"
+    }
+  },
+  {
+    "question_41": {
+      "question": "Tu utilises souvent les balises de service pour aider ou demander de l’aide ?",
+      "file_question": "question_41.wav",
+      "reply": "Compris.",
+      "file_reply": "reply_41.wav"
+    }
+  },
+  {
+    "question_42": {
+      "question": "Tu fais du refuel ou du repair pour d’autres joueurs ?",
+      "file_question": "question_42.wav",
+      "reply": "Très bien.",
+      "file_reply": "reply_42.wav"
+    }
+  },
+  {
+    "question_43": {
+      "question": "Tu préfères les vols de nuit ou de jour dans le ‘verse ?",
+      "file_question": "question_43.wav",
+      "reply": "Ok.",
+      "file_reply": "reply_43.wav"
+    }
+  },
+  {
+    "question_44": {
+      "question": "Tu as une route commerciale favorite entre deux lieux ?",
+      "file_question": "question_44.wav",
+      "reply": "Je vois.",
+      "file_reply": "reply_44.wav"
+    }
+  },
+  {
+    "question_45": {
+      "question": "Tu gères ton inventaire local ou tu stockes tout dans un HUB ?",
+      "file_question": "question_45.wav",
+      "reply": "D’accord.",
+      "file_reply": "reply_45.wav"
+    }
+  },
+  {
+    "question_46": {
+      "question": "Tu fais des missions médicales ou de sauvetage parfois ?",
+      "file_question": "question_46.wav",
+      "reply": "Compris.",
+      "file_reply": "reply_46.wav"
+    }
+  },
+  {
+    "question_47": {
+      "question": "Tu as déjà testé des land vehicles comme le Cyclone ou l’Ursa ?",
+      "file_question": "question_47.wav",
+      "reply": "Très bien.",
+      "file_reply": "reply_47.wav"
+    }
+  },
+  {
+    "question_48": {
+      "question": "Tu préfères commencer depuis un hab ou directement dans ton vaisseau ?",
+      "file_question": "question_48.wav",
+      "reply": "Ok.",
+      "file_reply": "reply_48.wav"
+    }
+  },
+  {
+    "question_49": {
+      "question": "Tu explores les wrecks pour le loot et les petites histoires ?",
+      "file_question": "question_49.wav",
+      "reply": "Je vois.",
+      "file_reply": "reply_49.wav"
+    }
+  },
+  {
+    "question_50": {
+      "question": "Tu fais des missions de livraison sensibles avec des délais serrés ?",
+      "file_question": "question_50.wav",
+      "reply": "D’accord.",
+      "file_reply": "reply_50.wav"
+    }
+  },
+  {
+    "question_51": {
+      "question": "Tu as une musique ou une ambiance sonore que tu associes au vol ?",
+      "file_question": "question_51.wav",
+      "reply": "Compris.",
+      "file_reply": "reply_51.wav"
+    }
+  },
+  {
+    "question_52": {
+      "question": "Tu utilises les balises quantiques d’autres joueurs pour voyager ?",
+      "file_question": "question_52.wav",
+      "reply": "Très bien.",
+      "file_reply": "reply_52.wav"
+    }
+  },
+  {
+    "question_53": {
+      "question": "Tu préfères t’installer sur MicroTech, Hurston, ArcCorp ou Crusader ?",
+      "file_question": "question_53.wav",
+      "reply": "Ok.",
+      "file_reply": "reply_53.wav"
+    }
+  },
+  {
+    "question_54": {
+      "question": "Tu as déjà perdu une cargaison importante lors d’un imprévu ?",
+      "file_question": "question_54.wav",
+      "reply": "Je vois.",
+      "file_reply": "reply_54.wav"
+    }
+  },
+  {
+    "question_55": {
+      "question": "Tu fais des contrats illégaux parfois pour pimenter la session ?",
+      "file_question": "question_55.wav",
+      "reply": "D’accord.",
+      "file_reply": "reply_55.wav"
+    }
+  },
+  {
+    "question_56": {
+      "question": "Tu aimes organiser ton hangar et personnaliser tes emplacements ?",
+      "file_question": "question_56.wav",
+      "reply": "Compris.",
+      "file_reply": "reply_56.wav"
+    }
+  },
+  {
+    "question_57": {
+      "question": "Tu testes de nouveaux vaisseaux quand ils sont en Free Fly ?",
+      "file_question": "question_57.wav",
+      "reply": "Très bien.",
+      "file_reply": "reply_57.wav"
+    }
+  },
+  {
+    "question_58": {
+      "question": "Tu préfères voler léger pour la vitesse ou blindé pour la sécurité ?",
+      "file_question": "question_58.wav",
+      "reply": "Ok.",
+      "file_reply": "reply_58.wav"
+    }
+  },
+  {
+    "question_59": {
+      "question": "Tu as une histoire drôle ou un échec épique à raconter en jeu ?",
+      "file_question": "question_59.wav",
+      "reply": "Je vois.",
+      "file_reply": "reply_59.wav"
+    }
+  },
+  {
+    "question_60": {
+      "question": "Quand tu lances une session, tu sais exactement quoi faire ou tu improvises ?",
+      "file_question": "question_60.wav",
+      "reply": "D’accord.",
+      "file_reply": "reply_60.wav"
+    }
+  }
+]

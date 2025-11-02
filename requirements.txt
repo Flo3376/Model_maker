@@ -1,0 +1,21 @@
+# NovaQA - Model Maker Requirements
+# Interface et GUI
+PyQt6>=6.5.0
+
+# Audio processing et enregistrement
+numpy>=1.24.0
+sounddevice>=0.4.6
+soundfile>=0.12.1
+
+# Interface de jeu (pour musique d'ambiance)
+pygame>=2.5.0
+
+# Système et utilitaires
+typing-extensions>=4.7.0
+
+# Reconnaissance vocale (dépendance optionnelle - déjà fournie dans vosk_models/)
+# vosk>=0.3.45  # Décommenter si besoin d'installer vosk
+
+# Dépendances système Windows (installées automatiquement)
+# - WASAPI (Windows Audio Session API) - Natif Windows
+# - sounddevice utilise PortAudio - Inclus dans la wheel sounddevice
