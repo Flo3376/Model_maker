@@ -149,36 +149,47 @@ class ResponseRecorder(QThread):
             if NOISE_FLOOR_ADAPTATION:
                 print(f"   🔇 Adaptation au bruit ambiant: {NOISE_FLOOR_LEARNING_SEC}s d'apprentissage")
             
-            # Configuration audio
+            # Configuration audio optimisée pour qualité
             if self.device_index is None:
                 return
                 
-            dev_info = sd.query_devices(self.device_index)
-            samplerate = int(dev_info.get('default_samplerate', RESPONSE_SAMPLE_RATE))
+            # Forcer 44.1kHz pour éviter les problèmes de resampling
+            samplerate = RESPONSE_SAMPLE_RATE  # Toujours 44100, pas de device auto
             channels = 1  # Mono pour les réponses
+            
+            print(f"   🎚️ Audio config: {samplerate}Hz, {channels}ch, blocksize={BLOCKSIZE}")
             
             def audio_callback(indata, frames, time_info, status):
                 if self.should_stop:
                     raise sd.CallbackStop()
                 
-                # Calculer le niveau audio (RMS puis dBFS)
-                rms = np.sqrt(np.mean(indata.astype(np.float64) ** 2))
-                if rms > 0:
+                # Vérifier les erreurs de status
+                if status:
+                    print(f"⚠️ Audio callback status: {status}")
+                
+                # Utiliser directement float32 sans conversion multiple
+                audio_data = indata.astype(np.float32)
+                
+                # Calculer le niveau audio (RMS puis dBFS) de manière optimisée
+                rms = np.sqrt(np.mean(audio_data ** 2))
+                if rms > 1e-10:  # Éviter log(0)
                     dbfs = 20.0 * np.log10(rms)
-                    dbfs = max(-80.0, min(0.0, dbfs))
+                    dbfs = np.clip(dbfs, -80.0, 0.0)  # Plus efficace que max/min
                 else:
                     dbfs = -80.0
                 
-                self._process_audio_level(dbfs, indata, frames)
+                self._process_audio_level(dbfs, audio_data, frames)
             
-            # Démarrer le stream d'enregistrement
+            # Démarrer le stream d'enregistrement avec paramètres optimisés
             with sd.InputStream(
                 device=self.device_index,
                 channels=channels,
                 samplerate=samplerate,
                 callback=audio_callback,
                 blocksize=BLOCKSIZE,
-                dtype=DTYPE
+                dtype=DTYPE,
+                latency='low',        # Latence faible pour réduire les hachures
+                extra_settings=sd.WasapiSettings(exclusive=False)  # Mode partagé plus stable
             ):
                 if IMMEDIATE_RECORDING:
                     print("🔴 ENREGISTREMENT DÉMARRÉ IMMÉDIATEMENT")
@@ -237,9 +248,10 @@ class ResponseRecorder(QThread):
         threshold = self.dynamic_threshold if DYNAMIC_SILENCE_DETECTION else VU_METER_THRESHOLD
         is_active = dbfs > threshold
         
-        # Si enregistrement immédiat, toujours enregistrer
+        # Si enregistrement immédiat, toujours enregistrer (optimisé)
         if IMMEDIATE_RECORDING and self.recording_active:
-            self.recording_data.append(indata.copy())
+            # Éviter copy() inutile si on a déjà les bonnes données
+            self.recording_data.append(indata if indata.dtype == np.float32 else indata.astype(np.float32))
         
         if is_active:
             self.last_silence_time = None
@@ -257,7 +269,8 @@ class ResponseRecorder(QThread):
                         self._start_recording()
                 
                 if self.recording_active:
-                    self.recording_data.append(indata.copy())
+                    # Optimiser la copie des données
+                    self.recording_data.append(indata if indata.dtype == np.float32 else indata.astype(np.float32))
             
         else:
             # Silence détecté
@@ -265,13 +278,10 @@ class ResponseRecorder(QThread):
                 self.last_silence_time = current_time
             
             if self.recording_active:
-                # Continuer d'enregistrer le silence pour un résultat naturel
-                if IMMEDIATE_RECORDING:
-                    self.recording_data.append(indata.copy())
-                else:
-                    self.recording_data.append(indata.copy())
+                # Continuer d'enregistrer le silence pour un résultat naturel (optimisé)
+                self.recording_data.append(indata if indata.dtype == np.float32 else indata.astype(np.float32))
                 
-                # Timeout de silence adapté
+                # Mode automatique normal - détection de fin par silence
                 silence_timeout = environment_manager.get_silence_duration() if IMMEDIATE_RECORDING else SPEECH_SILENCE_TIMEOUT_MS
                 
                 if self.silence_start_time is None:

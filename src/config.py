@@ -5,7 +5,7 @@ Configuration et constantes globales pour NovaQA
 # === PARAMÈTRES AUDIO ===
 DBFS_FLOOR = -60.0
 UPDATE_INTERVAL_MS = 50
-BLOCKSIZE = 1024
+BLOCKSIZE = 2048              # Augmenté pour réduire les hachures (était 1024)
 DTYPE = 'float32'
 
 # === PARAMÈTRES DE VALIDATION MICROPHONE ===

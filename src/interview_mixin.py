@@ -102,7 +102,7 @@ class InterviewMixin:
                 self.response_recorder.stop_recording()
                 self.response_recorder.wait()
             
-            # Créer le nouvel enregistreur
+            # Créer le nouvel enregistreur (mode manuel supprimé)
             device_index = None
             if hasattr(self, 'audio_worker') and self.audio_worker:
                 device_index = self.audio_worker.device_index
@@ -202,22 +202,18 @@ class InterviewMixin:
                 self.current_audio_player.stop()
                 self.current_audio_player.wait()
             
+            # Arrêter l'enregistrement en cours
+            if hasattr(self, 'response_recorder') and self.response_recorder:
+                print("⏹️ Arrêt de l'enregistrement...")
+                self.response_recorder.stop_recording()
+            
             # Afficher la réponse dans l'interface
             reply_text = question_data['reply']
             current = self.question_manager.get_current_question_number()
             self.question_display.setText(f"💬 Swan: {reply_text}")
             
-            # Jouer l'audio de la réponse
-            audio_file = f"{GENERATED_FOLDER}/{question_data['file_reply']}"
-            if os.path.exists(audio_file):
-                self.current_audio_player = AudioPlayer(audio_file)
-                # Connecter le signal pour attendre la fin AVANT de continuer
-                self.current_audio_player.finished.connect(self.on_reply_finished)
-                self.current_audio_player.start()
-                print(f"🔊 Lecture réponse: {audio_file}")
-            else:
-                print(f"⚠️ Fichier réponse manquant: {audio_file}")
-                QTimer.singleShot(2000, self.on_reply_finished)
+            # Jouer l'audio de la réponse après un petit délai
+            QTimer.singleShot(500, lambda: self._play_current_reply(question_data))
             
             # Désactiver temporairement les boutons
             self.end_question_btn.setEnabled(False)
@@ -225,28 +221,43 @@ class InterviewMixin:
             
             print(f"✅ Question {current} terminée - Réponse: {reply_text}")
     
-    def on_reply_finished(self):
-        """Appelé quand l'audio de réponse est terminé"""
-        print("🔊 Réponse terminée, attente 3 secondes...")
-        # Attendre 3 secondes après la fin de l'audio puis passer à la suivante
-        QTimer.singleShot(3000, self.auto_next_question)
-    
-    def auto_next_question(self):
-        """Passe automatiquement à la question suivante après la réponse"""
-        if self.question_manager.has_next_question():
-            self.question_manager.next_question()
-            self.display_current_question()
-            self.end_question_btn.setEnabled(True)
+    def _play_current_reply(self, question_data):
+        """Joue la réponse de la question actuelle"""
+        # Jouer l'audio de la réponse
+        audio_file = f"{GENERATED_FOLDER}/{question_data['file_reply']}"
+        if os.path.exists(audio_file):
+            self.current_audio_player = AudioPlayer(audio_file)
+            # Connecter le signal pour attendre la fin AVANT de continuer
+            self.current_audio_player.finished.connect(self.on_reply_finished)
+            self.current_audio_player.start()
+            print(f"🔊 Lecture réponse: {audio_file}")
         else:
-            # Fin de l'interview
-            self.end_interview()
+            print(f"⚠️ Fichier réponse manquant: {audio_file}")
+            QTimer.singleShot(2000, self.on_reply_finished)
+    
+    def on_reply_finished(self):
+        """Appelé quand l'audio de réponse est terminé - PLUS de passage automatique"""
+        print("🔊 Réponse terminée")
+        print("👆 Cliquez sur 'QUESTION SUIVANTE' pour continuer")
+        
+        # Réactiver les boutons pour que l'utilisateur puisse continuer manuellement
+        self.next_btn.setEnabled(self.question_manager.has_next_question())
+        if not self.question_manager.has_next_question():
+            # Dernière question, activer le bouton de fin d'interview
+            self.next_btn.setText("TERMINER L'INTERVIEW")
+            self.next_btn.setEnabled(True)
     
     def next_question(self):
-        """Passe manuellement à la question suivante"""
+        """Passe manuellement à la question suivante (SEULE méthode maintenant)"""
         if self.question_manager.has_next_question():
             self.question_manager.next_question()
             self.display_current_question()
+            # Réactiver le bouton de fin de question pour la nouvelle question
+            self.end_question_btn.setEnabled(True)
+            # Remettre le texte normal du bouton
+            self.next_btn.setText("QUESTION SUIVANTE")
         else:
+            # Fin de l'interview
             self.end_interview()
     
     def end_interview(self):
