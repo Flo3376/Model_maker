@@ -225,6 +225,22 @@ class MainWindow(QMainWindow, InterviewMixin):
         control_layout.addWidget(self.end_question_btn)
         
         interview_layout.addLayout(control_layout)
+        
+        # Voyant d'enregistrement
+        self.recording_indicator = QLabel("🎤 VOUS POUVEZ PARLER")
+        self.recording_indicator.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.recording_indicator.setStyleSheet("""
+            background-color: #28a745;
+            color: white;
+            font-weight: bold;
+            font-size: 16px;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 5px 0;
+        """)
+        self.recording_indicator.hide()  # Caché par défaut
+        interview_layout.addWidget(self.recording_indicator)
+        
         main_layout.addWidget(interview_group)
         
         main_layout.addStretch()
@@ -461,6 +477,16 @@ class MainWindow(QMainWindow, InterviewMixin):
                 print("🎵 Ambiance démarrée (thread dédié)")
         except Exception as e:
             print(f"❌ Erreur ambiance: {e}")
+    
+    def show_recording_indicator(self):
+        """Affiche le voyant d'enregistrement"""
+        print("[INTERFACE] 🟢 Affichage voyant enregistrement")
+        self.recording_indicator.show()
+        
+    def hide_recording_indicator(self):
+        """Masque le voyant d'enregistrement"""  
+        print("[INTERFACE] 🔴 Masquage voyant enregistrement")
+        self.recording_indicator.hide()
             
     def closeEvent(self, event):
         try:

@@ -136,10 +136,12 @@ class InterviewMixin:
     def on_recording_started(self):
         """Appelé quand l'enregistrement a vraiment commencé"""
         print("✅ [INTERFACE] Signal reçu: enregistrement confirmé démarré")
+        self.show_recording_indicator()  # Afficher le voyant
     
     def on_recording_finished(self, file_path):
         """Appelé quand l'enregistrement est terminé"""
         print(f"📁 [INTERFACE] Signal reçu: enregistrement terminé -> {file_path}")
+        self.hide_recording_indicator()  # Masquer le voyant
         print("=" * 60)
         print("🎯 [INTERFACE] RÉPONSE ENREGISTRÉE AVEC SUCCÈS !")
         print("=" * 60)
@@ -212,6 +214,7 @@ class InterviewMixin:
             if hasattr(self, 'response_recorder') and self.response_recorder:
                 print("🛑 [INTERFACE] Demande d'arrêt de l'enregistrement...")
                 self.response_recorder.stop_recording()
+                self.hide_recording_indicator()  # Masquer le voyant
             
             # Afficher la réponse dans l'interface
             reply_text = question_data['reply']
