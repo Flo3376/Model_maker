@@ -34,6 +34,7 @@ pip install -r requirements.txt
 Assure-toi que ces fichiers sont présents dans le dossier principal :
 - `disclaimer.wav`
 - `avant_de_commencer.wav` 
+- `interview_ended.wav`
 - `ambiance.mp3`
 - `generated/` (dossier contenant question_XX.wav)
 
@@ -41,13 +42,23 @@ Assure-toi que ces fichiers sont présents dans le dossier principal :
 
 ```
 model_maker/
-├── main.py                 # Application principale
+├── main.py                 # Point d'entrée principal (simplifié)
+├── src/                    # Code source modulaire
+│   ├── __init__.py
+│   ├── config.py          # Configuration et constantes
+│   ├── question_manager.py # Gestion des questions et reprise
+│   ├── audio_workers.py   # Workers audio (enregistrement/lecture)
+│   ├── widgets.py         # Widgets personnalisés (VU-mètre, popups)
+│   ├── main_window.py     # Fenêtre principale et interface
+│   └── interview_mixin.py # Logique d'interview
 ├── question.json           # Questions de l'interview
 ├── requirements.txt        # Dépendances Python
+├── check_system.py        # Script de diagnostic
 ├── README.md              # Documentation
 ├── ambiance.mp3           # Musique d'ambiance
 ├── disclaimer.wav         # Audio d'avertissement
 ├── avant_de_commencer.wav # Audio intro
+├── interview_ended.wav    # Audio de fin d'interview
 ├── generated/             # Fichiers audio des questions
 │   ├── question_01.wav
 │   ├── reply_01.wav

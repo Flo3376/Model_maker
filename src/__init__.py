@@ -1,0 +1,1 @@
+# NovaQA - Package principal

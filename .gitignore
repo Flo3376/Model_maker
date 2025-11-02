@@ -53,6 +53,7 @@ sound_response/
 # Garde les fichiers audio système (mais ignore les logs)
 !disclaimer.wav
 !avant_de_commencer.wav
+!interview_ended.wav
 !ambiance.mp3
 !generated/
 !generated/*.wav
