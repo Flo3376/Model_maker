@@ -1,0 +1,116 @@
+# === PYTHON ===
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# === ENVIRONNEMENTS VIRTUELS ===
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# === IDEs ===
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# === LOGS ===
+*.log
+logs/
+debug.log
+error.log
+
+# === ORION SPÉCIFIQUE ===
+
+# Cache audio généré
+sound/output_sound/
+sound/cache/
+*.wav
+*.mp3
+*.ogg
+
+
+
+# Configuration locale (peut contenir clés API)
+config_local.yaml
+secrets.yaml
+
+# Cache interface
+.qt_cache/
+ui_cache/
+
+# Données temporaires
+temp/
+tmp/
+*.tmp
+
+# === DONNÉES SENSIBLES ===
+# Clés API (sécurité)
+*api_key*
+*secret*
+*token*
+.env.local
+
+# Logs de débogage détaillés
+debug_*.log
+trace_*.log
+
+# === SYSTÈME ===
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Linux
+*~
+
+# === TESTS ===
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.nox/
+
+# === DOCUMENTATION ===
+docs/_build/
+
+# === DÉPLOIEMENT ===
+*.zip
+*.tar.gz
+release/
+/sandbox
+/tests
+.cache_spotify_controller
+/core/grammar
+core/config/config.yaml
+core/config/window_state.json
